@@ -2,38 +2,93 @@
 Description and usage of [Secret Loader tool](https://github.com/guillaumeblaquiere/secret-loader) 
 and in relation with [the medium article]() 
 
-# Default format
-The default format of the environment variable follow this pattern:
+The process run a script or a the Secret Loader tool before running the app. It works only on environment variable.
+In serverless environment, only Cloud Run is compliant. (and App Engine Flexible, because it's compliant with container)
 
-`<prefix><secret_name>[#<version>]`
+# Test the secret-loader
+The test is performed with Cloud Run.
 
-Where:
-* **prefix** is the environment variable identifier for the secret to load. It's required and `secret:` by default 
-It's customizable (see bellow)
-* **secret_name** is the name of your secret in secret manager. Required
-* **version** is the version of the secret. One `#` is required before specifing the version. 
-It's optional. If missing, the latest version is loaded
-
-Example of values of environment variable:
+## Create a secret
+Create a secret into secret manager
 
 ```
-secret:mySecret#2
+echo "my super secret" | gcloud beta secrets create --data-file=- --replication-policy=automatic my-secret
 ```
 
-# Customization
-It's possible to customize the prefix defined in the environment variable by setting a flag in the call
+## Create a service account
+You have to allow Cloud Run service account to access to secret manager
 
- * **prefix** of the secret defined in the environment variables, default is `secret:`
- 
- Example
+Create the service account
 ```
- secret-loader -prefix super-secret:
+gcloud iam service-accounts create cr-access-secret
 ```
 
-# Limitation
-For now, the service recover only the secret in the current project.
+Either allow full access to secret manager and can access to all secrets
+```
+gcloud projects add-iam-policy-binding \
+--member=serviceAccount:cr-access-secret@<PROJECT_ID>.iam.gserviceaccount.com \
+--role=roles/secretmanager.secretAccessor <PROJECT_ID>
+```
 
-Open a feature request is you need to get secret from external project
+Or allow the access to a specific secret
+```
+gcloud beta secrets add-iam-policy-binding  \
+--member=serviceAccount:cr-access-secret@<PROJECT_ID>.iam.gserviceaccount.com \
+--role=roles/secretmanager.secretAccessor my-secret
+```
+
+## Build the test container
+The test container only print the environment variable when you call the root URL. 
+2 versions exists
+
+* Build the script version based on gcloud 
+```
+gcloud builds submit
+```
+The file [`start-gcloud.sh`](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/start-gcloud.sh)
+contains a bash script and use `gcloud` command for loading the secret. The [`Dockerfile.gcloud`](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/Dockerfile.gcloud)
+file is used during the build. The latest layer is the gcloud SDK container. It's a big image (700Mb)
+
+
+* Build the Secret Loader tool version
+```
+gcloud builds submit -t gcr.io/<PROJECT_ID>/secret-loader
+```
+This version is very light. Only use an alpine linux image and the gcloud secret loader tool. Less than 20Mb. 
+The [start.sh](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/start.sh) file is also simpler
+
+## Deploy the container
+The container must be deployed with the previously created service account and with the secret in parameter
+
+* Deploy the script version
+```
+gcloud run deploy --image=gcr.io/<PROJECT_ID>/secret-loader-gcloud --platform=managed  \
+--region=us-central1 --allow-unauthenticated \
+--service-account=cr-access-secret@<PROJECT_ID>.iam.gserviceaccount.com \
+--set-env-vars=super-secret=secret:my-secret#1  secret-loader-gcloud
+```
+
+
+* Deploy the Secret Loader tool version
+```
+gcloud run deploy --image=gcr.io/<PROJECT_ID>/secret-loader --platform=managed  \
+--region=us-central1 --allow-unauthenticated \
+--service-account=cr-access-secret@<PROJECT_ID>.iam.gserviceaccount.com \
+--set-env-vars=super-secret=secret:my-secret#1  secret-loader
+```
+
+## Test the secret loader transformation
+Perform a simple curl on the URL and check the environment variable `super-secret` value
+
+* Deploy the script version
+```
+curl https://secret-loader-gcloud.<project-hash>-uc.a.run.app
+```
+
+* Deploy the Secret Loader tool version
+```
+curl https://secret-loader.<project-hash>-uc.a.run.app
+```
 
 # License
 
