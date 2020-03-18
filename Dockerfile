@@ -12,17 +12,10 @@ COPY . .
 RUN go test -v ./...
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o server
 
-# Minimal image
-FROM alpine
+# Gcloud capable image
+FROM google/cloud-sdk
 
 COPY --from=builder /app/server /server
-
-# Add the startup script and make it runable
-COPY start.sh /start.sh
+COPY --from=builder /app/start-gcloud.sh /start.sh
 RUN chmod +x /start.sh
-
-# Add the secret-loader tools and make it runable
-RUN wget https://storage.googleapis.com/secret-loader/master/linux64/secret-loader
-RUN chmod +x /secret-loader
-
 CMD ["/start.sh", "/server"]
