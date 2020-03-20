@@ -1,5 +1,5 @@
 # Secret loader Medium
-This project is in relation with [the medium article]()
+This project is in relation with [the medium article](https://medium.com/google-cloud/secret-manager-improve-cloud-run-security-without-changing-the-code-634f60c541e6)
 that explain how to preload secret in Cloud Run without changing the application code 
 
 The process run a script before running the app. It works only on environment variable.
@@ -45,8 +45,8 @@ Build the script version based on gcloud SDK
 ```
 gcloud builds submit -t gcr.io/<PROJECT_ID>/secret-loader
 ```
-The file [`start-gcloud.sh`](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/start-gcloud.sh)
-contains a bash script and use `gcloud` command for loading the secret. The [`Dockerfile.gcloud`](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/Dockerfile.gcloud)
+The file [`start.sh`](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/start-gcloud.sh)
+contains a bash script and use `gcloud` command for loading the secret. The [`Dockerfile`](https://github.com/guillaumeblaquiere/secret-loader-medium/blob/master/Dockerfile.gcloud)
 file is used during the build. The latest layer is the gcloud SDK container. It's a big image (700Mb)
 
 ## Deploy the container
