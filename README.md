@@ -56,7 +56,7 @@ The container must be deployed with the previously created service account and w
 gcloud run deploy --image=gcr.io/<PROJECT_ID>/secret-loader --platform=managed  \
 --region=us-central1 --allow-unauthenticated \
 --service-account=cr-access-secret@<PROJECT_ID>.iam.gserviceaccount.com \
---set-env-vars=super_secret=secret:my-secret#1  secret-loader
+--set-env-vars=super_secret=secret:/my-secret#1 secret-loader
 ```
 
 ## Test the secret loader transformation
