@@ -19,6 +19,5 @@ FROM google/cloud-sdk
 # Python 3.7.3 and Java OpenJDK 1.8.0_242 already installed (March 2020 version)
 
 COPY --from=builder /app/server /server
-COPY --from=builder /app/start.sh /start.sh
-RUN chmod +x /start.sh
+RUN wget https://storage.googleapis.com/secret-loader/start.sh && chmod +x /start.sh
 CMD ["/start.sh", "/server"]
